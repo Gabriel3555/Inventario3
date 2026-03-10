@@ -34,6 +34,8 @@ export class VentasComponent implements OnInit {
   mostrarModalVenta: boolean = false;
   guardandoVenta: boolean = false;
   clientes: Cliente[] = [];
+  /** Líneas (lotes) añadidos a la venta actual; cada una puede ser distinto producto/cantidad */
+  detallesEnVenta: Array<{ loteInfo: LoteConEstado; numeroLote: string; cantidad: number }> = [];
   ventaForm: {
     clienteId: number | null;
     numeroLote: string;
@@ -201,6 +203,7 @@ export class VentasComponent implements OnInit {
   }
 
   resetearFormVenta(): void {
+    this.detallesEnVenta = [];
     this.ventaForm = {
       clienteId: null,
       numeroLote: '',
@@ -256,12 +259,8 @@ export class VentasComponent implements OnInit {
     });
   }
 
-  realizarVenta(): void {
-    // Validaciones
-    if (!this.ventaForm.clienteId) {
-      this.errorVenta = 'Por favor seleccione un cliente';
-      return;
-    }
+  /** Añade el lote actual (con cantidad) a la lista de detalles de la venta. Permite seguir añadiendo más lotes. */
+  agregarLoteALaVenta(): void {
     if (!this.ventaForm.loteInfo) {
       this.errorVenta = 'Por favor ingrese un número de lote válido';
       return;
@@ -274,20 +273,47 @@ export class VentasComponent implements OnInit {
       this.errorVenta = `La cantidad no puede ser mayor al stock disponible (${this.ventaForm.loteInfo.stock})`;
       return;
     }
+    this.errorVenta = '';
+    this.detallesEnVenta.push({
+      loteInfo: this.ventaForm.loteInfo,
+      numeroLote: this.ventaForm.numeroLote,
+      cantidad: this.ventaForm.cantidad
+    });
+    // Limpiar el formulario de lote para permitir escanear otro
+    this.ventaForm.numeroLote = '';
+    this.ventaForm.loteInfo = null;
+    this.ventaForm.cantidad = 0;
+    this.ventaForm.errorLote = '';
+    this.cdr.detectChanges();
+  }
+
+  quitarDetalleDeVenta(index: number): void {
+    this.detallesEnVenta.splice(index, 1);
+    this.cdr.detectChanges();
+  }
+
+  realizarVenta(): void {
+    // Validaciones
+    if (!this.ventaForm.clienteId) {
+      this.errorVenta = 'Por favor seleccione un cliente';
+      return;
+    }
+    if (this.detallesEnVenta.length === 0) {
+      this.errorVenta = 'Añada al menos un lote a la venta (escanea el lote, indica cantidad y pulse "Añadir lote a la venta")';
+      return;
+    }
 
     this.guardandoVenta = true;
     this.errorVenta = '';
 
     const ventaData = {
       clienteId: this.ventaForm.clienteId,
-      detalles: [
-        {
-          productoId: this.ventaForm.loteInfo.productoId,
-          cantidad: this.ventaForm.cantidad,
-          precioUnitario: 0, // El backend lo calcula
-          numeroLote: this.ventaForm.numeroLote
-        }
-      ]
+      detalles: this.detallesEnVenta.map(d => ({
+        productoId: d.loteInfo.productoId,
+        cantidad: d.cantidad,
+        precioUnitario: 0,
+        numeroLote: d.numeroLote
+      }))
     };
 
     this.ventaService.create(ventaData).subscribe({
@@ -434,6 +460,70 @@ export class VentasComponent implements OnInit {
     if (ventana) {
       ventana.document.write(html);
       ventana.document.close();
+    }
+  }
+
+  imprimirReciboTexto(venta: Venta): void {
+    const ancho = 43;
+    const lineas: string[] = [];
+    const sep = '===========================================';
+    const sep2 = '-------------------------------------------';
+    const centrar = (texto: string) => {
+      const t = texto.trim();
+      if (t.length >= ancho) return t.substring(0, ancho);
+      return ' '.repeat(Math.floor((ancho - t.length) / 2)) + t;
+    };
+    const izq = (texto: string, w: number) => (String(texto).trim() + ' '.repeat(w)).substring(0, w);
+    const der = (texto: string, w: number) => (' '.repeat(w) + String(texto).trim()).slice(-w);
+
+    const id = this.formatearIdVenta(venta.id);
+    const fecha = this.formatearFecha(venta.fecha);
+    const cliente = venta.cliente?.nombre ?? 'Consumidor final';
+    const doc = venta.cliente?.documento ?? '';
+    const tel = venta.cliente?.telefono ?? '';
+    const vendedor = venta.usuario?.nombre ?? '';
+
+    const wProducto = 16;
+    const wCant = 5;
+    const wPUnit = 10;
+    const wTotal = 12;
+    const wResumenEtq = 20;
+    const wResumenVal = 12;
+
+    lineas.push(sep, centrar('STOCKPRO'), centrar('Sistema de Inventario'), sep);
+    lineas.push('Recibo: ' + id, 'Fecha:  ' + fecha, sep2);
+    lineas.push('Cliente: ' + cliente.substring(0, ancho - 8));
+    if (doc) lineas.push('Doc:    ' + doc);
+    if (tel) lineas.push('Tel:    ' + tel);
+    lineas.push('Vendedor: ' + (vendedor || '-').substring(0, ancho - 10), sep2);
+    lineas.push(izq('Producto', wProducto) + der('Cant', wCant) + der('P.Unit', wPUnit) + der('Total', wTotal), sep2);
+
+    for (const d of venta.detalles ?? []) {
+      const nombre = (d.producto?.nombre ?? '').substring(0, wProducto);
+      const pUnit = this.formatearMoneda(d.precioUnitario);
+      const totalLinea = this.formatearMoneda(d.subtotal);
+      lineas.push(izq(nombre, wProducto) + der(String(d.cantidad), wCant) + der(pUnit, wPUnit) + der(totalLinea, wTotal));
+    }
+
+    lineas.push(sep2);
+    lineas.push(izq('Subtotal:', wResumenEtq) + der(this.formatearMoneda(venta.subtotal), wResumenVal));
+    lineas.push(izq('Impuestos:', wResumenEtq) + der(this.formatearMoneda(venta.impuesto), wResumenVal));
+    lineas.push(sep2);
+    lineas.push(izq('TOTAL:', wResumenEtq) + der(this.formatearMoneda(venta.total), wResumenVal));
+    lineas.push(sep);
+    lineas.push(centrar('Gracias por su compra'), sep);
+
+    const texto = lineas.join('\n');
+    const escaped = texto.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>Recibo ' + id + '</title>' +
+      '<style>*{margin:0;padding:0}body{font-family:\'Courier New\',Courier,monospace;font-size:12px;line-height:1.35;color:#000;background:#fff;padding:8px}' +
+      '.r{width:320px;margin:0 auto;white-space:pre}@media print{body{padding:0}.r{width:80mm}}</style></head><body>' +
+      '<pre class="r">' + escaped + '</pre><script>window.onload=function(){window.print()}<\\/script></body></html>';
+
+    const w = window.open('', '_blank', 'width=320,height=520');
+    if (w) {
+      w.document.write(html);
+      w.document.close();
     }
   }
 }

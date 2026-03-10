@@ -777,6 +777,112 @@
   display: inline-block;
 }
 
+/* Añadir lote a la venta */
+.add-lote-row {
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.btn-add-lote {
+  background: linear-gradient(135deg, #059669, #047857);
+  color: #fff;
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn-add-lote:hover {
+  background: linear-gradient(135deg, #047857, #065f46);
+  transform: translateY(-1px);
+}
+
+/* Lotes en la venta (resumen) */
+.lotes-en-venta-section {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.lotes-en-venta-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #334155;
+  margin: 0 0 0.75rem 0;
+}
+
+.lotes-en-venta-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.lotes-en-venta-table thead {
+  background: #e2e8f0;
+}
+
+.lotes-en-venta-table th {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #475569;
+}
+
+.lotes-en-venta-table th.text-center,
+.lotes-en-venta-table td.text-center {
+  text-align: center;
+}
+
+.lotes-en-venta-table th.text-right,
+.lotes-en-venta-table td.text-right {
+  text-align: right;
+}
+
+.lotes-en-venta-table tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.lotes-en-venta-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.lotes-en-venta-table td {
+  padding: 0.6rem 0.75rem;
+  color: #1e293b;
+}
+
+.lote-codigo {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  background: #e0e7ff;
+  color: #3730a3;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.btn-quitar-lote {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  transition: background 0.2s;
+}
+
+.btn-quitar-lote:hover {
+  background: #fecaca;
+}
+
 .badge-vencido {
   background-color: #fee2e2;
   color: #991b1b;
@@ -868,6 +974,26 @@
   transform: translateY(-1px);
 }
 
+/* Botón Imprimir recibo (texto) en tabla */
+.btn-recibo-texto {
+  background: #475569;
+  color: #fff;
+  border: none;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.btn-recibo-texto:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  background: #334155;
+}
+
 /* Botón Recibo en modal de detalle */
 .btn-recibo-modal {
   background: linear-gradient(135deg, #10b981, #059669);
@@ -884,5 +1010,24 @@
 .btn-recibo-modal:hover {
   opacity: 0.9;
   transform: translateY(-1px);
+}
+
+/* Botón Imprimir recibo en modal */
+.btn-recibo-texto-modal {
+  background: #475569;
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.btn-recibo-texto-modal:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  background: #334155;
 }
 

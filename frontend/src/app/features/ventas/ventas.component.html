@@ -85,6 +85,9 @@
               <button class="btn-detalle" (click)="verDetalle(venta)">
                 Ver detalle
               </button>
+              <button class="btn-recibo-texto" (click)="imprimirReciboTexto(venta)" title="Imprimir recibo de texto">
+                Imprimir recibo
+              </button>
               <button class="btn-recibo" (click)="descargarRecibo(venta)" title="Descargar recibo PDF">
                 Recibo PDF
               </button>
@@ -190,6 +193,9 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button>
+      <button class="btn btn-recibo-texto-modal" (click)="imprimirReciboTexto(ventaSeleccionada!)" title="Imprimir recibo de texto">
+        Imprimir recibo
+      </button>
       <button class="btn btn-recibo-modal" (click)="descargarRecibo(ventaSeleccionada!)" title="Descargar recibo PDF">
         Descargar Recibo PDF
       </button>
@@ -317,8 +323,45 @@
           <small class="form-hint">Máximo disponible: {{ ventaForm.loteInfo.stock ?? 0 }} unidades</small>
         </div>
 
+        <!-- Botón Añadir lote a la venta -->
+        <div class="form-group add-lote-row" *ngIf="ventaForm.loteInfo">
+          <button 
+            type="button" 
+            class="btn-add-lote"
+            (click)="agregarLoteALaVenta()">
+            Añadir lote a la venta
+          </button>
+        </div>
+
+        <!-- Resumen: Lotes en la venta -->
+        <div class="lotes-en-venta-section" *ngIf="detallesEnVenta.length > 0">
+          <h4 class="lotes-en-venta-title">Lotes en la venta ({{ detallesEnVenta.length }})</h4>
+          <table class="lotes-en-venta-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Lote</th>
+                <th class="text-center">Cant.</th>
+                <th class="text-right">Quitar</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let d of detallesEnVenta; let i = index">
+                <td>{{ d.loteInfo.productoNombre }}</td>
+                <td><code class="lote-codigo">{{ d.numeroLote }}</code></td>
+                <td class="text-center">{{ d.cantidad }}</td>
+                <td class="text-right">
+                  <button type="button" class="btn-quitar-lote" (click)="quitarDetalleDeVenta(i)" title="Quitar de la venta">
+                    ✕
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
         <!-- Botones -->
-        <div class="modal-footer" *ngIf="ventaForm.loteInfo">
+        <div class="modal-footer" *ngIf="ventaForm.clienteId">
           <button 
             type="button" 
             class="btn-secondary" 
@@ -329,9 +372,9 @@
           <button 
             type="submit" 
             class="btn-primary"
-            [disabled]="guardandoVenta">
+            [disabled]="guardandoVenta || detallesEnVenta.length === 0">
             <span *ngIf="guardandoVenta">Procesando...</span>
-            <span *ngIf="!guardandoVenta">Realizar Venta</span>
+            <span *ngIf="!guardandoVenta">Realizar Venta ({{ detallesEnVenta.length }} {{ detallesEnVenta.length === 1 ? 'lote' : 'lotes' }})</span>
           </button>
         </div>
       </form>
