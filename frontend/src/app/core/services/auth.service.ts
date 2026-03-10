@@ -3,8 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import type { LoginRequest, RegisterRequest, JwtResponse, Rol } from '../models/auth.model';
+import { environment } from '../../../../environments/environment';
 
-const API_URL = 'http://localhost:8080/api/auth';
+const API_URL = `${environment.apiUrl}/auth`;
 const TOKEN_KEY = 'inventario_token';
 const USER_KEY = 'inventario_user';
 
