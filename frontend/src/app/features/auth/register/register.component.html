@@ -1,0 +1,52 @@
+<div class="auth-card">
+  <img src="/favicon.ico" alt="StockPro" class="auth-logo" />
+  <h1>Registrarse</h1>
+  <p class="subtitle">Crear cuenta en el sistema de inventario</p>
+
+  @if (errorMessage) {
+    <div class="error-msg" role="alert">{{ errorMessage }}</div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <label>
+      <span>Nombre</span>
+      <input type="text" formControlName="nombre" placeholder="Tu nombre" autocomplete="name" />
+    </label>
+    @if (form.get('nombre')?.invalid && form.get('nombre')?.touched) {
+      <small class="field-error">Nombre obligatorio (mín. 2 caracteres)</small>
+    }
+
+    <label>
+      <span>Correo electrónico</span>
+      <input type="email" formControlName="correo" placeholder="tu@correo.com" autocomplete="email" />
+    </label>
+    @if (form.get('correo')?.invalid && form.get('correo')?.touched) {
+      <small class="field-error">Correo obligatorio y formato válido</small>
+    }
+
+    <label>
+      <span>Contraseña</span>
+      <input type="password" formControlName="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+    </label>
+    @if (form.get('password')?.invalid && form.get('password')?.touched) {
+      <small class="field-error">Mínimo 6 caracteres</small>
+    }
+
+    <label>
+      <span>Rol</span>
+      <select formControlName="rol">
+        @for (r of roles; track r.value) {
+          <option [value]="r.value">{{ r.label }}</option>
+        }
+      </select>
+    </label>
+
+    <button type="submit" [disabled]="loading">
+      {{ loading ? 'Registrando…' : 'Registrarse' }}
+    </button>
+  </form>
+
+  <p class="footer">
+    ¿Ya tienes cuenta? <a routerLink="/login">Iniciar sesión</a>
+  </p>
+</div>

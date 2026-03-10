@@ -1,0 +1,152 @@
+<div class="dashboard-content">
+      <div class="page-header">
+        <h2 class="dashboard-title">Dashboard</h2>
+        <p class="dashboard-subtitle">Resumen general de tu inventario y operaciones</p>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-spinner" *ngIf="loading">
+        <div class="spinner"></div>
+        <p>Cargando estadísticas...</p>
+      </div>
+
+      <!-- Error -->
+      <div class="alert alert-error" *ngIf="error">
+        {{ error }}
+        <button class="alert-close" (click)="cargarEstadisticas()">Reintentar</button>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid" *ngIf="!loading && !error">
+        <div class="stat-card">
+          <div class="stat-icon blue">
+            <span>📦</span>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">Productos</div>
+            <div class="stat-value">{{ stats.productos.total }}</div>
+            <div class="stat-meta">{{ stats.productos.unidades }} unidades totales</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon green">
+            <span>💵</span>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">Ventas del Mes</div>
+            <div class="stat-value">{{ formatearMoneda(stats.ventasMes.monto) }}</div>
+            <div class="stat-meta" *ngIf="stats.ventasMes.cambio > 0" [class.positive]="stats.ventasMes.cambio > 0">
+              +{{ stats.ventasMes.cambio }}% vs mes anterior
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon warning">
+            <span>⚠️</span>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">Alertas Stock</div>
+            <div class="stat-value">{{ stats.alertas.count }}</div>
+            <div class="stat-meta" [class.negative]="stats.alertas.count > 0">{{ stats.alertas.mensaje }}</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon purple">
+            <span>📈</span>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">Valor Inventario</div>
+            <div class="stat-value">{{ formatearMoneda(stats.valorInventario.monto) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="charts-grid" *ngIf="!loading && !error">
+        <!-- Ventas Semanales Chart -->
+        <div class="chart-card">
+          <h3 class="chart-title">Ventas Semanales</h3>
+          <div class="bar-chart">
+            <div class="chart-bars">
+              <div class="bar-wrapper" *ngFor="let item of ventasSemanales">
+                <div class="bar-container">
+                  <div class="bar" [style.height.%]="getBarHeight(item.ventas)"></div>
+                </div>
+                <div class="bar-label">{{ item.semana }}</div>
+              </div>
+            </div>
+            <div class="chart-axis">
+              <div class="axis-label">$300K</div>
+              <div class="axis-label">$225K</div>
+              <div class="axis-label">$150K</div>
+              <div class="axis-label">$75K</div>
+              <div class="axis-label">$0K</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock por Categoría Chart -->
+        <div class="chart-card">
+          <h3 class="chart-title">Stock por Categoría</h3>
+          <div class="donut-chart">
+            <svg viewBox="0 0 200 200" class="donut-svg">
+              <circle cx="100" cy="100" r="80" fill="none" stroke="#ef4444" stroke-width="40" 
+                      stroke-dasharray="125.6 502.4" transform="rotate(-90 100 100)"/>
+              <circle cx="100" cy="100" r="80" fill="none" stroke="#10b981" stroke-width="40" 
+                      stroke-dasharray="100.5 502.4" stroke-dashoffset="-125.6" transform="rotate(-90 100 100)"/>
+              <circle cx="100" cy="100" r="80" fill="none" stroke="#f59e0b" stroke-width="40" 
+                      stroke-dasharray="75.36 502.4" stroke-dashoffset="-226.1" transform="rotate(-90 100 100)"/>
+              <circle cx="100" cy="100" r="80" fill="none" stroke="#ec4899" stroke-width="40" 
+                      stroke-dasharray="90.43 502.4" stroke-dashoffset="-301.46" transform="rotate(-90 100 100)"/>
+              <circle cx="100" cy="100" r="80" fill="none" stroke="#8b5cf6" stroke-width="40" 
+                      stroke-dasharray="60.29 502.4" stroke-dashoffset="-391.89" transform="rotate(-90 100 100)"/>
+              <circle cx="100" cy="100" r="80" fill="none" stroke="#06b6d4" stroke-width="40" 
+                      stroke-dasharray="50.24 502.4" stroke-dashoffset="-452.18" transform="rotate(-90 100 100)"/>
+            </svg>
+            
+            <div class="donut-legend">
+              <div class="legend-item" *ngFor="let cat of stockCategorias">
+                <span class="legend-color" [style.background-color]="cat.color"></span>
+                <span class="legend-label">{{ cat.nombre }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Últimos Movimientos -->
+      <div class="movements-card">
+        <h3 class="movements-title">Últimos Movimientos</h3>
+        <div class="movements-list">
+          <div class="movement-item" *ngFor="let mov of ultimosMovimientos">
+            <div class="movement-icon" [ngClass]="{
+              'icon-merma': mov.tipo === 'merma',
+              'icon-salida': mov.tipo === 'salida',
+              'icon-entrada': mov.tipo === 'entrada'
+            }">
+              {{ mov.icon }}
+            </div>
+            <div class="movement-details">
+              <div class="movement-product">{{ mov.producto }}</div>
+              <div class="movement-description">{{ mov.descripcion }}</div>
+            </div>
+            <div class="movement-badge" [ngClass]="{
+              'badge-merma': mov.tipo === 'merma',
+              'badge-salida': mov.tipo === 'salida',
+              'badge-entrada': mov.tipo === 'entrada'
+            }">
+              {{ mov.tipo }}
+            </div>
+            <div class="movement-quantity" [ngClass]="{
+              'quantity-negative': mov.cantidad < 0,
+              'quantity-positive': mov.cantidad > 0
+            }">
+              {{ mov.cantidad > 0 ? '+' : '' }}{{ mov.cantidad }}
+            </div>
+          </div>
+        </div>
+      </div>
+</div>

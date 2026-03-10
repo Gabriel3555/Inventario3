@@ -1,0 +1,191 @@
+<div class="usuarios-content">
+  <!-- Page Header -->
+  <div class="page-header-section">
+    <div class="header-info">
+      <h2 class="section-title">Usuarios</h2>
+      <p class="section-description">Directorio de usuarios del sistema con nombre, correo y rol</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="abrirModalCrear()">Crear usuario</button>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="alert alert-error" *ngIf="error">
+    {{ error }}
+    <button class="alert-close" (click)="error = ''; cargarUsuarios()">Reintentar</button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-spinner" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Cargando usuarios...</p>
+  </div>
+
+  <!-- Cards Grid -->
+  <div class="cards-container" *ngIf="!loading && !error">
+    <div class="cards-wrapper">
+      <div class="cards-grid">
+        <article class="usuario-card" *ngFor="let u of usuariosPaginados">
+          <h3 class="card-nombre">{{ u.nombre }}</h3>
+          <dl class="card-details">
+            <div class="detail-row" *ngIf="u.correo">
+              <dt>Correo</dt>
+              <dd><a [href]="'mailto:' + u.correo" class="card-link">{{ u.correo }}</a></dd>
+            </div>
+            <div class="detail-row" *ngIf="u.rol">
+              <dt>Rol</dt>
+              <dd><span class="badge" [class.badge-admin]="u.rol === 'ADMIN'" [class.badge-vendedor]="u.rol === 'VENDEDOR'">{{ etiquetaRol(u.rol) }}</span></dd>
+            </div>
+            <div class="detail-row" *ngIf="u.fechaCreacion">
+              <dt>Fecha creación</dt>
+              <dd>{{ u.fechaCreacion | date:'short' }}</dd>
+            </div>
+          </dl>
+          <div class="card-actions">
+            <button class="btn btn-secondary btn-sm" (click)="abrirModalEditar(u)">Editar</button>
+            <button class="btn btn-danger btn-sm" (click)="eliminarUsuario(u)">Eliminar</button>
+          </div>
+        </article>
+      </div>
+
+      <div class="empty-state" *ngIf="usuariosFiltrados.length === 0">
+        No hay usuarios registrados
+      </div>
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagination" *ngIf="usuariosFiltrados.length > 0">
+      <div class="pagination-info">
+        Mostrando {{ rangoInicio }} - {{ rangoFin }} de {{ usuariosFiltrados.length }} usuarios
+      </div>
+      <div class="pagination-controls" *ngIf="totalPaginas > 1">
+        <button
+          class="btn-pagination"
+          (click)="paginaAnterior()"
+          [disabled]="paginaActual === 1"
+        >
+          ‹ Anterior
+        </button>
+        <button
+          *ngFor="let pagina of paginasArray"
+          class="btn-pagination"
+          [class.active]="pagina === paginaActual"
+          (click)="cambiarPagina(pagina)"
+        >
+          {{ pagina }}
+        </button>
+        <button
+          class="btn-pagination"
+          (click)="paginaSiguiente()"
+          [disabled]="paginaActual === totalPaginas"
+        >
+          Siguiente ›
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear/Editar -->
+<div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ modoEdicion ? 'Editar usuario' : 'Nuevo usuario' }}</h3>
+      <button class="modal-close" (click)="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form class="usuario-form">
+        <div class="form-group">
+          <label for="nombre">Nombre *</label>
+          <input
+            type="text"
+            id="nombre"
+            class="form-control"
+            [(ngModel)]="usuarioActual.nombre"
+            name="nombre"
+            required
+            placeholder="Nombre completo"
+          />
+        </div>
+        <div class="form-group">
+          <label for="correo">Correo *</label>
+          <input
+            type="email"
+            id="correo"
+            class="form-control"
+            [(ngModel)]="usuarioActual.correo"
+            name="correo"
+            required
+            placeholder="correo@ejemplo.com"
+          />
+        </div>
+        <div class="form-group" *ngIf="!modoEdicion">
+          <label for="password">Contraseña *</label>
+          <input
+            type="password"
+            id="password"
+            class="form-control"
+            [(ngModel)]="usuarioActual.password"
+            name="password"
+            required
+            placeholder="Mínimo 6 caracteres"
+          />
+        </div>
+        <div class="form-group" *ngIf="!modoEdicion">
+          <label for="passwordConfirm">Confirmar contraseña *</label>
+          <input
+            type="password"
+            id="passwordConfirm"
+            class="form-control"
+            [(ngModel)]="usuarioActual.passwordConfirm"
+            name="passwordConfirm"
+            required
+            placeholder="Repetir contraseña"
+          />
+        </div>
+        <div class="form-row" *ngIf="modoEdicion">
+          <div class="form-group">
+            <label for="password">Nueva contraseña</label>
+            <input
+              type="password"
+              id="password"
+              class="form-control"
+              [(ngModel)]="usuarioActual.password"
+              name="password"
+              placeholder="Dejar en blanco para mantener"
+            />
+          </div>
+          <div class="form-group">
+            <label for="passwordConfirm">Confirmar contraseña</label>
+            <input
+              type="password"
+              id="passwordConfirm"
+              class="form-control"
+              [(ngModel)]="usuarioActual.passwordConfirm"
+              name="passwordConfirm"
+              placeholder="Repetir nueva contraseña"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="rol">Rol</label>
+          <select
+            id="rol"
+            class="form-control"
+            [(ngModel)]="usuarioActual.rol"
+            name="rol"
+          >
+            <option *ngFor="let r of roles" [value]="r">{{ etiquetaRol(r) }}</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="guardarUsuario()" [disabled]="guardando">
+        {{ guardando ? 'Guardando...' : (modoEdicion ? 'Actualizar' : 'Crear') }}
+      </button>
+    </div>
+  </div>
+</div>

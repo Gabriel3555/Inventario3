@@ -1,0 +1,285 @@
+<div class="movimientos-content">
+  <!-- Page Header con búsqueda -->
+  <div class="page-header-section">
+    <div class="header-info">
+      <h2 class="section-title">Movimientos</h2>
+      <p class="section-description">Registro de entradas (compras), salidas (ventas) y mermas (daños)</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-primary btn-merma" (click)="abrirModalMerma()">
+        Notificar Merma
+      </button>
+      <div class="search-box">
+        <input 
+          type="text" 
+          placeholder="Buscar por producto, ID, nota o usuario..." 
+          class="search-input"
+          [(ngModel)]="searchTerm"
+          (input)="onSearch()"
+          [disabled]="loading"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card entrada">
+      <div class="stat-content">
+        <div class="stat-label">Entradas</div>
+        <div class="stat-value">{{ totalEntradas }}</div>
+      </div>
+    </div>
+
+    <div class="stat-card salida">
+      <div class="stat-content">
+        <div class="stat-label">Salidas</div>
+        <div class="stat-value">{{ totalSalidas }}</div>
+      </div>
+    </div>
+
+    <div class="stat-card merma">
+      <div class="stat-content">
+        <div class="stat-label">Mermas</div>
+        <div class="stat-value">{{ totalMermas }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filtros-container">
+    <button 
+      class="filtro-btn" 
+      [class.active]="filtroActivo === 'TODOS'"
+      (click)="cambiarFiltro('TODOS')">
+      Todos
+    </button>
+    <button 
+      class="filtro-btn" 
+      [class.active]="filtroActivo === 'ENTRADA'"
+      (click)="cambiarFiltro('ENTRADA')">
+      Entradas
+    </button>
+    <button 
+      class="filtro-btn" 
+      [class.active]="filtroActivo === 'SALIDA'"
+      (click)="cambiarFiltro('SALIDA')">
+      Salidas
+    </button>
+    <button 
+      class="filtro-btn" 
+      [class.active]="filtroActivo === 'MERMA'"
+      (click)="cambiarFiltro('MERMA')">
+      Mermas
+    </button>
+  </div>
+
+  <!-- Error Message -->
+  <div class="alert alert-error" *ngIf="error">
+    {{ error }}
+    <button class="alert-close" (click)="error = ''">✕</button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-spinner" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Cargando movimientos...</p>
+  </div>
+
+  <!-- Tabla de Movimientos -->
+  <div class="table-container" *ngIf="!loading">
+    <table class="movimientos-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Producto</th>
+          <th>Tipo</th>
+          <th>Cantidad</th>
+          <th>Fecha</th>
+          <th>Nota</th>
+          <th>Usuario</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let movimiento of movimientosPaginados">
+          <td>
+            <span class="badge badge-id">{{ obtenerIdFormateado(movimiento.id) }}</span>
+          </td>
+          <td>
+            <span class="producto-nombre">{{ movimiento.producto.nombre }}</span>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="obtenerClaseTipo(movimiento.tipo)">
+              {{ movimiento.tipo }}
+            </span>
+          </td>
+          <td>
+            <span class="cantidad" [ngClass]="obtenerClaseCantidad(movimiento.tipo)">
+              {{ obtenerSignoCantidad(movimiento.tipo) }}{{ movimiento.cantidad }}
+            </span>
+          </td>
+          <td>{{ formatearFecha(movimiento.fecha) }}</td>
+          <td>{{ movimiento.motivo }}</td>
+          <td>
+            <span class="usuario-badge">{{ obtenerNombreUsuario(movimiento) }}</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="movimientosPaginados.length === 0 && !loading">
+      <h3>No hay movimientos</h3>
+      <p *ngIf="searchTerm || filtroActivo !== 'TODOS'">
+        No se encontraron movimientos con los filtros seleccionados
+      </p>
+      <p *ngIf="!searchTerm && filtroActivo === 'TODOS'">
+        Aún no hay movimientos registrados en el sistema
+      </p>
+    </div>
+  </div>
+
+  <!-- Paginación (separada de la tabla) -->
+  <div class="pagination" *ngIf="movimientosFiltrados.length > 0 && !loading">
+    <div class="pagination-info">
+      Mostrando {{ (paginaActual - 1) * movimientosPorPagina + 1 }} - 
+      {{ Math.min(paginaActual * movimientosPorPagina, movimientosFiltrados.length) }} 
+      de {{ movimientosFiltrados.length }} movimientos
+    </div>
+    <div class="pagination-controls">
+      <button 
+        class="btn-pagination" 
+        [disabled]="paginaActual === 1"
+        (click)="cambiarPagina(paginaActual - 1)">
+        ‹ Anterior
+      </button>
+      <button 
+        *ngFor="let pagina of paginasArray"
+        class="btn-pagination"
+        [class.active]="pagina === paginaActual"
+        (click)="cambiarPagina(pagina)">
+        {{ pagina }}
+      </button>
+      <button 
+        class="btn-pagination" 
+        [disabled]="paginaActual === totalPaginas"
+        (click)="cambiarPagina(paginaActual + 1)">
+        Siguiente ›
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Notificar Merma -->
+<div class="modal-overlay" *ngIf="mostrarModalMerma" (click)="cerrarModalMerma()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Notificar Merma</h3>
+      <button class="modal-close" (click)="cerrarModalMerma()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Error Message -->
+      <div class="alert alert-error" *ngIf="errorMerma">
+        {{ errorMerma }}
+      </div>
+
+      <form (ngSubmit)="notificarMerma()">
+        <!-- Número de Lote -->
+        <div class="form-group">
+          <label for="numeroLote" class="form-label">
+            Número de Lote (13 dígitos) <span class="required">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="numeroLote" 
+            class="form-control input-buscar"
+            [(ngModel)]="mermaForm.numeroLote"
+            (ngModelChange)="onNumeroLoteChange()"
+            name="numeroLote"
+            placeholder="Ingrese 13 dígitos..."
+            maxlength="13"
+            pattern="\d{13}"
+            required
+            autofocus>
+          <small class="form-hint">La búsqueda se realiza automáticamente al completar 13 dígitos</small>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading-busqueda" *ngIf="buscandoLote">
+          <div class="spinner-small"></div>
+          <p>Buscando lote...</p>
+        </div>
+
+        <!-- Info del Producto (cuando se encuentra el lote) -->
+        <div class="producto-info-merma" *ngIf="mermaForm.productoId && !buscandoLote">
+          <div class="info-header">
+            <span class="info-icon">✅</span>
+            <h4>Lote Encontrado</h4>
+          </div>
+          <div class="info-row">
+            <span class="label">Producto:</span>
+            <span class="value">{{ mermaForm.productoNombre }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Stock Disponible:</span>
+            <span class="value">{{ mermaForm.stockDisponible }} unidades</span>
+          </div>
+        </div>
+
+        <!-- Cantidad -->
+        <div class="form-group" *ngIf="mermaForm.productoId">
+          <label for="cantidad" class="form-label">
+            Cantidad a dar de baja <span class="required">*</span>
+          </label>
+          <input 
+            type="number" 
+            id="cantidad" 
+            class="form-control"
+            [(ngModel)]="mermaForm.cantidad"
+            name="cantidad"
+            [max]="mermaForm.stockDisponible"
+            min="1"
+            placeholder="0"
+            required>
+          <small class="form-hint">Máximo: {{ mermaForm.stockDisponible }} unidades</small>
+        </div>
+
+        <!-- Nota -->
+        <div class="form-group" *ngIf="mermaForm.productoId">
+          <label for="nota" class="form-label">
+            Nota / Motivo <span class="required">*</span>
+          </label>
+          <textarea 
+            id="nota" 
+            class="form-control"
+            [(ngModel)]="mermaForm.nota"
+            name="nota"
+            rows="3"
+            placeholder="Ej: Producto dañado, Envase roto, etc."
+            required></textarea>
+          <small class="form-hint">Describa el motivo de la merma</small>
+        </div>
+
+        <!-- Botones -->
+        <div class="modal-footer" *ngIf="mermaForm.productoId">
+          <button 
+            type="button" 
+            class="btn-secondary" 
+            (click)="cerrarModalMerma()"
+            [disabled]="guardandoMerma">
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            class="btn-danger"
+            [disabled]="guardandoMerma">
+            <span *ngIf="guardandoMerma">Registrando...</span>
+            <span *ngIf="!guardandoMerma">Registrar Merma</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+

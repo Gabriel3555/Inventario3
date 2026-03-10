@@ -1,0 +1,202 @@
+<div class="proveedores-content">
+  <!-- Page Header -->
+  <div class="page-header-section">
+    <div class="header-info">
+      <h2 class="section-title">Proveedores</h2>
+      <p class="section-description">Directorio de proveedores con datos de contacto y tiempos de entrega</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="abrirModalCrear()">Crear proveedor</button>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="alert alert-error" *ngIf="error">
+    {{ error }}
+    <button class="alert-close" (click)="error = ''; cargarProveedores()">Reintentar</button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-spinner" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Cargando proveedores...</p>
+  </div>
+
+  <!-- Cards Grid -->
+  <div class="cards-container" *ngIf="!loading && !error">
+    <div class="cards-wrapper">
+      <div class="cards-grid">
+        <article class="proveedor-card" *ngFor="let p of proveedoresPaginados">
+          <h3 class="card-nombre">{{ p.nombre }}</h3>
+          <dl class="card-details">
+            <div class="detail-row" *ngIf="p.nit">
+              <dt>NIT</dt>
+              <dd>{{ p.nit }}</dd>
+            </div>
+            <div class="detail-row" *ngIf="p.tiempoEntrega">
+              <dt>Tiempo entrega</dt>
+              <dd>{{ p.tiempoEntrega }}</dd>
+            </div>
+            <div class="detail-row" *ngIf="p.correo">
+              <dt>Correo</dt>
+              <dd><a [href]="'mailto:' + p.correo" class="card-link">{{ p.correo }}</a></dd>
+            </div>
+            <div class="detail-row" *ngIf="p.telefono">
+              <dt>Teléfono</dt>
+              <dd><a [href]="'tel:' + p.telefono" class="card-link">{{ p.telefono }}</a></dd>
+            </div>
+            <div class="detail-row" *ngIf="p.direccion">
+              <dt>Dirección</dt>
+              <dd>{{ p.direccion }}</dd>
+            </div>
+            <div class="detail-row" *ngIf="p.nombreContacto">
+              <dt>Contacto</dt>
+              <dd>{{ p.nombreContacto }}</dd>
+            </div>
+          </dl>
+          <div class="card-actions">
+            <button class="btn btn-secondary btn-sm" (click)="abrirModalEditar(p)">Editar</button>
+            <button class="btn btn-danger btn-sm" (click)="eliminarProveedor(p)">Eliminar</button>
+          </div>
+        </article>
+      </div>
+
+      <div class="empty-state" *ngIf="proveedoresFiltrados.length === 0">
+        No hay proveedores registrados
+      </div>
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagination" *ngIf="proveedoresFiltrados.length > 0">
+      <div class="pagination-info">
+        Mostrando {{ rangoInicio }} - {{ rangoFin }} de {{ proveedoresFiltrados.length }} proveedores
+      </div>
+      <div class="pagination-controls" *ngIf="totalPaginas > 1">
+        <button
+          class="btn-pagination"
+          (click)="paginaAnterior()"
+          [disabled]="paginaActual === 1"
+        >
+          ‹ Anterior
+        </button>
+        <button
+          *ngFor="let pagina of paginasArray"
+          class="btn-pagination"
+          [class.active]="pagina === paginaActual"
+          (click)="cambiarPagina(pagina)"
+        >
+          {{ pagina }}
+        </button>
+        <button
+          class="btn-pagination"
+          (click)="paginaSiguiente()"
+          [disabled]="paginaActual === totalPaginas"
+        >
+          Siguiente ›
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear/Editar -->
+<div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ modoEdicion ? 'Editar proveedor' : 'Nuevo proveedor' }}</h3>
+      <button class="modal-close" (click)="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form class="proveedor-form">
+        <div class="form-group">
+          <label for="nombre">Nombre *</label>
+          <input
+            type="text"
+            id="nombre"
+            class="form-control"
+            [(ngModel)]="proveedorActual.nombre"
+            name="nombre"
+            required
+            placeholder="Razón social"
+          />
+        </div>
+        <div class="form-group">
+          <label for="nit">NIT</label>
+          <input
+            type="text"
+            id="nit"
+            class="form-control"
+            [(ngModel)]="proveedorActual.nit"
+            name="nit"
+            placeholder="Ej: 900.123.456-7"
+          />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="correo">Correo</label>
+            <input
+              type="email"
+              id="correo"
+              class="form-control"
+              [(ngModel)]="proveedorActual.correo"
+              name="correo"
+              placeholder="correo@ejemplo.com"
+            />
+          </div>
+          <div class="form-group">
+            <label for="telefono">Teléfono</label>
+            <input
+              type="text"
+              id="telefono"
+              class="form-control"
+              [(ngModel)]="proveedorActual.telefono"
+              name="telefono"
+              placeholder="+57 310 555 1234"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="direccion">Dirección</label>
+          <input
+            type="text"
+            id="direccion"
+            class="form-control"
+            [(ngModel)]="proveedorActual.direccion"
+            name="direccion"
+            placeholder="Cra 45 #23-10, Bogotá"
+          />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nombreContacto">Nombre del contacto</label>
+            <input
+              type="text"
+              id="nombreContacto"
+              class="form-control"
+              [(ngModel)]="proveedorActual.nombreContacto"
+              name="nombreContacto"
+              placeholder="Carlos Mendoza"
+            />
+          </div>
+          <div class="form-group">
+            <label for="tiempoEntrega">Tiempo de entrega</label>
+            <input
+              type="text"
+              id="tiempoEntrega"
+              class="form-control"
+              [(ngModel)]="proveedorActual.tiempoEntrega"
+              name="tiempoEntrega"
+              placeholder="Ej: 3d, 5d"
+            />
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="guardarProveedor()" [disabled]="guardando">
+        {{ guardando ? 'Guardando...' : (modoEdicion ? 'Actualizar' : 'Crear') }}
+      </button>
+    </div>
+  </div>
+</div>

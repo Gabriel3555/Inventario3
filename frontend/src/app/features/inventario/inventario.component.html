@@ -1,0 +1,152 @@
+<div class="inventario-content">
+      <!-- Page Header (búsqueda separada como en Productos) -->
+      <div class="page-header-section">
+        <div class="header-info">
+          <h2 class="section-title">Inventario</h2>
+          <p class="section-description">Control de stock, alertas de mínimos y ubicaciones físicas.</p>
+        </div>
+        <div class="header-actions">
+          <div class="search-box">
+            <input 
+              type="text" 
+              placeholder="Buscar por nombre o ubicación..." 
+              class="search-input"
+              [(ngModel)]="searchTerm"
+              (input)="filtrarInventario()"
+              [disabled]="loading"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card primary">
+          <div class="stat-content">
+            <div class="stat-label">Total Productos</div>
+            <div class="stat-value">{{ stats.totalProductos }}</div>
+          </div>
+        </div>
+
+        <div class="stat-card warning">
+          <div class="stat-content">
+            <div class="stat-label">Stock Bajo</div>
+            <div class="stat-value">{{ stats.stockBajo }}</div>
+          </div>
+        </div>
+
+        <div class="stat-card danger">
+          <div class="stat-content">
+            <div class="stat-label">Stock Crítico</div>
+            <div class="stat-value">{{ stats.stockCritico }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado de Carga -->
+      <div *ngIf="loading" class="loading-container">
+        <div class="spinner"></div>
+        <p>Cargando inventario...</p>
+      </div>
+
+      <!-- Estado de Error -->
+      <div *ngIf="error && !loading" class="error-container">
+        <span class="error-icon">⚠️</span>
+        <p>{{ error }}</p>
+        <button class="btn-retry" (click)="cargarInventario()">Reintentar</button>
+      </div>
+
+      <!-- Tabla de Inventario (card separado, sin búsqueda pegada) -->
+      <div class="table-wrapper" *ngIf="!loading && !error">
+        <div class="table-container">
+          <table class="inventario-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Ubicación</th>
+                <th class="text-center">Stock Actual</th>
+                <th class="text-center">Stock Mínimo</th>
+                <th>Nivel</th>
+                <th class="text-center">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of inventarioPaginado">
+                <td>
+                  <div class="producto-info">
+                    <div class="producto-nombre">{{ item.producto }}</div>
+                    <div class="producto-sku">{{ item.sku }}</div>
+                  </div>
+                </td>
+                <td>{{ item.ubicacion }}</td>
+                <td class="text-center">
+                  <span class="stock-number">{{ item.stockActual }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="stock-number secondary">{{ item.stockMinimo }}</span>
+                </td>
+                <td>
+                  <div class="nivel-container">
+                    <div class="nivel-bar">
+                      <div 
+                        class="nivel-fill" 
+                        [style.width.%]="getBarWidth(item)"
+                        [style.background-color]="getBarColor(item)"
+                      ></div>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <span 
+                    class="estado-badge" 
+                    [ngClass]="{
+                      'estado-normal': getEstadoClase(item) === 'normal',
+                      'estado-bajo': getEstadoClase(item) === 'bajo',
+                      'estado-critico': getEstadoClase(item) === 'critico'
+                    }"
+                  >
+                    {{ getEstadoTexto(item) }}
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="inventarioPaginado.length === 0">
+                <td colspan="6" class="text-center no-data">
+                  No se encontraron resultados
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación (bloque separado como en Productos) -->
+        <div class="pagination" *ngIf="inventarioFiltrado.length > 0">
+          <div class="pagination-info">
+            Mostrando {{ rangoInicio }} - {{ rangoFin }} de {{ inventarioFiltrado.length }} productos
+          </div>
+          <div class="pagination-controls" *ngIf="totalPaginas > 1">
+            <button 
+              class="btn-pagination" 
+              (click)="paginaAnterior()" 
+              [disabled]="paginaActual === 1"
+            >
+              ‹ Anterior
+            </button>
+            <button 
+              *ngFor="let pagina of paginasArray" 
+              class="btn-pagination" 
+              [class.active]="pagina === paginaActual"
+              (click)="cambiarPagina(pagina)"
+            >
+              {{ pagina }}
+            </button>
+            <button 
+              class="btn-pagination" 
+              (click)="paginaSiguiente()" 
+              [disabled]="paginaActual === totalPaginas"
+            >
+              Siguiente ›
+            </button>
+          </div>
+        </div>
+      </div>
+</div>

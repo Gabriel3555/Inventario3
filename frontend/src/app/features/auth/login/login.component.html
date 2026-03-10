@@ -1,0 +1,35 @@
+<div class="auth-card">
+  <img src="/favicon.ico" alt="StockPro" class="auth-logo" />
+  <h1>Iniciar sesión</h1>
+  <p class="subtitle">Sistema de inventario</p>
+
+  @if (errorMessage()) {
+    <div class="error-msg" role="alert">{{ errorMessage() }}</div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <label>
+      <span>Correo electrónico</span>
+      <input type="email" formControlName="correo" placeholder="tu@correo.com" autocomplete="email" />
+    </label>
+    @if (form.get('correo')?.invalid && form.get('correo')?.touched) {
+      <small class="field-error">Correo obligatorio y formato válido</small>
+    }
+
+    <label>
+      <span>Contraseña</span>
+      <input type="password" formControlName="password" placeholder="••••••••" autocomplete="current-password" />
+    </label>
+    @if (form.get('password')?.invalid && form.get('password')?.touched) {
+      <small class="field-error">La contraseña es obligatoria</small>
+    }
+
+    <button type="submit" [disabled]="loading()">
+      {{ loading() ? 'Entrando…' : 'Entrar' }}
+    </button>
+  </form>
+
+  <p class="footer">
+    ¿No tienes cuenta? <a routerLink="/register">Registrarse</a>
+  </p>
+</div>

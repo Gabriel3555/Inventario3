@@ -1,0 +1,341 @@
+<div class="ventas-content">
+  <!-- Page Header -->
+  <div class="page-header-section">
+    <div class="header-info">
+      <h2 class="section-title">Ventas</h2>
+      <p class="section-description">Historial de ventas con detalle de productos, totales e impuestos</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-primary" (click)="abrirModalVenta()">
+        Realizar Venta
+      </button>
+      <div class="search-box">
+        <input 
+          type="text" 
+          placeholder="Buscar por ID, cliente o estado..." 
+          class="search-input"
+          [(ngModel)]="searchTerm"
+          (input)="filtrarVentas()"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="alert alert-error" *ngIf="error">
+    {{ error }}
+    <button class="alert-close" (click)="error = ''; cargarVentas()">Reintentar</button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-spinner" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Cargando ventas...</p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid" *ngIf="!loading">
+    <div class="stat-card primary">
+      <div class="stat-content">
+        <div class="stat-label">Total Ventas</div>
+        <div class="stat-value">{{ formatearMoneda(stats.completadas) }}</div>
+      </div>
+    </div>
+
+    <div class="stat-card info">
+      <div class="stat-content">
+        <div class="stat-label">Cantidad Ventas</div>
+        <div class="stat-value">{{ stats.totalVentas }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Ventas -->
+  <div class="table-wrapper" *ngIf="!loading && !error">
+    <div class="table-container">
+      <table class="ventas-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th class="text-right">Subtotal</th>
+            <th class="text-right">Impuestos</th>
+            <th class="text-right">Total</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let venta of ventasPaginadas">
+            <td>
+              <span class="venta-id">{{ formatearIdVenta(venta.id) }}</span>
+            </td>
+            <td>{{ formatearFecha(venta.fecha) }}</td>
+            <td>
+              <div class="cliente-info">
+                {{ venta.cliente?.nombre ?? '-' }}
+              </div>
+            </td>
+            <td class="text-right">{{ formatearMoneda(venta.subtotal) }}</td>
+            <td class="text-right">{{ formatearMoneda(venta.impuesto) }}</td>
+            <td class="text-right">
+              <span class="total-value">{{ formatearMoneda(venta.total) }}</span>
+            </td>
+            <td class="text-center acciones-cell">
+              <button class="btn-detalle" (click)="verDetalle(venta)">
+                Ver detalle
+              </button>
+              <button class="btn-recibo" (click)="descargarRecibo(venta)" title="Descargar recibo PDF">
+                Recibo PDF
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="ventasPaginadas.length === 0">
+            <td colspan="7" class="text-center no-data">
+              No se encontraron ventas
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagination" *ngIf="ventasFiltradas.length > 0">
+      <div class="pagination-info">
+        Mostrando {{ rangoInicio }} - {{ rangoFin }} de {{ ventasFiltradas.length }} ventas
+      </div>
+      <div class="pagination-controls" *ngIf="totalPaginas > 1">
+        <button 
+          class="btn-pagination" 
+          (click)="paginaAnterior()" 
+          [disabled]="paginaActual === 1"
+        >
+          ‹ Anterior
+        </button>
+        <button 
+          *ngFor="let pagina of paginasArray" 
+          class="btn-pagination" 
+          [class.active]="pagina === paginaActual"
+          (click)="cambiarPagina(pagina)"
+        >
+          {{ pagina }}
+        </button>
+        <button 
+          class="btn-pagination" 
+          (click)="paginaSiguiente()" 
+          [disabled]="paginaActual === totalPaginas"
+        >
+          Siguiente ›
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Detalle -->
+<div class="modal-overlay" *ngIf="mostrarDetalle" (click)="cerrarDetalle()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Detalle de Venta {{ ventaSeleccionada ? formatearIdVenta(ventaSeleccionada.id) : '' }}</h3>
+      <button class="modal-close" (click)="cerrarDetalle()">✕</button>
+    </div>
+    <div class="modal-body" *ngIf="ventaSeleccionada">
+      <div class="detalle-info">
+        <div class="info-row">
+          <div class="info-label">Cliente:</div>
+          <div class="info-value">{{ ventaSeleccionada.cliente?.nombre ?? '-' }}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Fecha:</div>
+          <div class="info-value">{{ formatearFecha(ventaSeleccionada.fecha) }}</div>
+        </div>
+      </div>
+
+      <div class="detalle-productos">
+        <h4>Productos</h4>
+        <table class="productos-table">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th class="text-center">Cantidad</th>
+              <th class="text-right">Precio Unit.</th>
+              <th class="text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let detalle of ventaSeleccionada.detalles">
+              <td>{{ detalle.producto.nombre }}</td>
+              <td class="text-center">{{ detalle.cantidad }}</td>
+              <td class="text-right">{{ formatearMoneda(detalle.precioUnitario) }}</td>
+              <td class="text-right">{{ formatearMoneda(detalle.subtotal) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="detalle-totales">
+        <div class="total-row">
+          <div class="total-label">Subtotal:</div>
+          <div class="total-value">{{ formatearMoneda(ventaSeleccionada.subtotal) }}</div>
+        </div>
+        <div class="total-row">
+          <div class="total-label">Impuestos:</div>
+          <div class="total-value">{{ formatearMoneda(ventaSeleccionada.impuesto) }}</div>
+        </div>
+        <div class="total-row total-final">
+          <div class="total-label">Total:</div>
+          <div class="total-value">{{ formatearMoneda(ventaSeleccionada.total) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button>
+      <button class="btn btn-recibo-modal" (click)="descargarRecibo(ventaSeleccionada!)" title="Descargar recibo PDF">
+        Descargar Recibo PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Realizar Venta -->
+<div class="modal-overlay" *ngIf="mostrarModalVenta" (click)="cerrarModalVenta()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Realizar Venta</h3>
+      <button class="modal-close" (click)="cerrarModalVenta()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Error Message -->
+      <div class="alert alert-error" *ngIf="errorVenta">
+        {{ errorVenta }}
+      </div>
+
+      <form (ngSubmit)="realizarVenta()">
+        <!-- Cliente -->
+        <div class="form-group">
+          <label for="cliente" class="form-label">
+            Cliente <span class="required">*</span>
+          </label>
+          <select 
+            id="cliente" 
+            class="form-control"
+            [(ngModel)]="ventaForm.clienteId"
+            name="cliente"
+            required>
+            <option [value]="null" disabled>Seleccione un cliente</option>
+            <option *ngFor="let cliente of clientes" [value]="cliente.id">
+              {{ cliente.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Número de Lote -->
+        <div class="form-group">
+          <label for="numeroLoteVenta" class="form-label">
+            Número de Lote (13 dígitos) <span class="required">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="numeroLoteVenta" 
+            class="form-control input-buscar"
+            [(ngModel)]="ventaForm.numeroLote"
+            (ngModelChange)="onNumeroLoteVentaChange()"
+            name="numeroLoteVenta"
+            placeholder="Ingrese 13 dígitos..."
+            maxlength="13"
+            pattern="\d{13}"
+            required>
+          <small class="form-hint">La búsqueda se realiza automáticamente al completar 13 dígitos</small>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading-busqueda" *ngIf="ventaForm.buscandoLote">
+          <div class="spinner-small"></div>
+          <p>Buscando lote...</p>
+        </div>
+
+        <!-- Error búsqueda lote -->
+        <div class="alert alert-error" *ngIf="ventaForm.errorLote && !ventaForm.buscandoLote">
+          {{ ventaForm.errorLote }}
+        </div>
+
+        <!-- Info del Lote (cuando se encuentra) -->
+        <div class="lote-info-venta" *ngIf="ventaForm.loteInfo && !ventaForm.buscandoLote">
+          <div class="info-header">
+            <span class="info-icon">✅</span>
+            <h4>Lote Encontrado</h4>
+          </div>
+          
+          <div class="info-grid">
+            <div class="info-row">
+              <span class="label">Producto:</span>
+              <span class="value">{{ ventaForm.loteInfo.productoNombre }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">SKU:</span>
+              <span class="value">{{ ventaForm.loteInfo.productoSku }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Categoría:</span>
+              <span class="value">{{ ventaForm.loteInfo.categoriaNombre || 'Sin categoría' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Stock Disponible:</span>
+              <span class="value stock-badge">{{ ventaForm.loteInfo.stock }} unidades</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Fecha Venc.:</span>
+              <span class="value">{{ formatearFecha(ventaForm.loteInfo.fechaVencimiento) }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Estado:</span>
+              <span class="value">
+                <span class="badge" [ngClass]="getEstadoBadgeClass(ventaForm.loteInfo.estado)">
+                  {{ ventaForm.loteInfo.estado }}
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cantidad -->
+        <div class="form-group" *ngIf="ventaForm.loteInfo">
+          <label for="cantidadVenta" class="form-label">
+            Cantidad a Vender <span class="required">*</span>
+          </label>
+          <input 
+            type="number" 
+            id="cantidadVenta" 
+            class="form-control"
+            [(ngModel)]="ventaForm.cantidad"
+            name="cantidadVenta"
+            [max]="ventaForm.loteInfo.stock ?? 0"
+            min="1"
+            placeholder="0"
+            required>
+          <small class="form-hint">Máximo disponible: {{ ventaForm.loteInfo.stock ?? 0 }} unidades</small>
+        </div>
+
+        <!-- Botones -->
+        <div class="modal-footer" *ngIf="ventaForm.loteInfo">
+          <button 
+            type="button" 
+            class="btn-secondary" 
+            (click)="cerrarModalVenta()"
+            [disabled]="guardandoVenta">
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            class="btn-primary"
+            [disabled]="guardandoVenta">
+            <span *ngIf="guardandoVenta">Procesando...</span>
+            <span *ngIf="!guardandoVenta">Realizar Venta</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+

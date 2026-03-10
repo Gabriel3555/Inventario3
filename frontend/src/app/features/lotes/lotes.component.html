@@ -1,0 +1,369 @@
+<div class="lotes-content">
+  <!-- Page Header -->
+  <div class="page-header-section">
+    <div class="header-info">
+      <h2 class="section-title">Lotes y Vencimientos</h2>
+      <p class="section-description">Control de productos perecederos y farmacéuticos con fechas de vencimiento</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-refresh" (click)="cargarDatos()" [disabled]="loading" title="Refrescar lista de lotes">
+        Refrescar
+      </button>
+      <button class="btn-primary" (click)="abrirModalBuscar()">
+        Buscar Lote
+      </button>
+      <button class="btn-primary" (click)="abrirModalCrear()" *ngIf="isAdmin">
+        Crear Lote
+      </button>
+    </div>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Con Lote</div>
+      <div class="stat-value">{{ estadisticas.conLote }}</div>
+    </div>
+
+    <div class="stat-card stat-warning">
+      <div class="stat-label">Por Vencer (&lt;90d)</div>
+      <div class="stat-value">{{ estadisticas.porVencer }}</div>
+    </div>
+
+    <div class="stat-card stat-danger">
+      <div class="stat-label">Vencidos</div>
+      <div class="stat-value">{{ estadisticas.vencidos }}</div>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div class="alert alert-error" *ngIf="error">
+    {{ error }}
+    <button class="alert-close" (click)="error = ''">✕</button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-spinner" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Cargando lotes...</p>
+  </div>
+
+  <!-- Tabla de lotes -->
+  <div class="table-container" *ngIf="!loading">
+    <table class="lotes-table" *ngIf="lotes.length > 0">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Categoría</th>
+          <th>Lote</th>
+          <th>Fecha Vencimiento</th>
+          <th>Días Restantes</th>
+          <th>Productos Restantes</th>
+          <th>Estado</th>
+          <th *ngIf="isAdmin">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let lote of lotes" [ngClass]="getEstadoClass(lote.estado)">
+          <td>
+            <div class="producto-info">
+              <span class="producto-nombre">{{ lote.productoNombre }}</span>
+              <span class="producto-sku">{{ lote.productoSku }}</span>
+            </div>
+          </td>
+          <td>{{ lote.categoriaNombre || 'Sin categoría' }}</td>
+          <td>
+            <span class="badge badge-lote">{{ lote.codigo }}</span>
+          </td>
+          <td>{{ formatearFecha(lote.fechaVencimiento) }}</td>
+          <td>
+            <span class="badge" [ngClass]="getDiasRestantesClass(lote.diasRestantes)">
+              {{ lote.diasRestantes }}
+            </span>
+          </td>
+          <td>
+            <span class="stock-badge" [ngClass]="getStockClass(lote.stock)">
+              {{ lote.stock ?? 0 }} unidades
+            </span>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="getEstadoBadgeClass(lote.estado)">
+              {{ lote.estado }}
+            </span>
+          </td>
+          <td *ngIf="isAdmin">
+            <button 
+              class="btn-retirar"
+              (click)="retirarLote(lote)"
+              [disabled]="!lote.stock || lote.stock === 0"
+              [title]="lote.stock && lote.stock > 0 ? 'Retirar lote por vencimiento' : 'No hay productos para retirar'">
+              Retirar
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="lotes.length === 0">
+      <div class="empty-icon">📦</div>
+      <h3>No se encontraron lotes</h3>
+      <p>No hay lotes registrados en el sistema</p>
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  <div class="pagination" *ngIf="!loading && lotes.length > 0">
+    <div class="pagination-info">
+      Mostrando {{ (paginaActual - 1) * lotesPorPagina + 1 }} - 
+      {{ Math.min(paginaActual * lotesPorPagina, totalLotes) }} 
+      de {{ totalLotes }} lotes
+    </div>
+    <div class="pagination-controls">
+      <button 
+        class="btn-pagination"
+        [disabled]="paginaActual === 1"
+        (click)="cambiarPagina(paginaActual - 1)">
+        ‹ Anterior
+      </button>
+      <button 
+        *ngFor="let pagina of paginasArray"
+        class="btn-pagination"
+        [class.active]="pagina === paginaActual"
+        (click)="cambiarPagina(pagina)">
+        {{ pagina }}
+      </button>
+      <button 
+        class="btn-pagination"
+        [disabled]="paginaActual === totalPaginas"
+        (click)="cambiarPagina(paginaActual + 1)">
+        Siguiente ›
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear Lote -->
+<div class="modal-overlay" *ngIf="mostrarModalCrear" (click)="cerrarModalCrear()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Crear Nuevo Lote</h3>
+      <button class="modal-close" (click)="cerrarModalCrear()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Error Message -->
+      <div class="alert alert-error" *ngIf="error">
+        {{ error }}
+      </div>
+
+      <form (ngSubmit)="guardarLote()">
+        <!-- Producto -->
+        <div class="form-group">
+          <label for="producto" class="form-label">
+            Producto <span class="required">*</span>
+          </label>
+          <select 
+            id="producto" 
+            class="form-control"
+            [(ngModel)]="nuevoLote.productoId"
+            name="producto"
+            required>
+            <option [value]="null" disabled>Seleccione un producto</option>
+            <option *ngFor="let producto of productos" [value]="producto.id">
+              {{ producto.nombre }} - {{ producto.sku }}
+            </option>
+          </select>
+          
+          <!-- Info del producto seleccionado -->
+          <div class="producto-info-box" *ngIf="productoSeleccionado">
+            <div class="info-item">
+              <span class="info-label">Categoría:</span>
+              <span class="info-value">{{ productoSeleccionado.categoria?.nombre || 'Sin categoría' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Stock actual:</span>
+              <span class="info-value">{{ productoSeleccionado.stock }} unidades</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Número de Lote -->
+        <div class="form-group">
+          <label for="numeroLote" class="form-label">
+            Número de Lote (13 dígitos) <span class="required">*</span>
+          </label>
+          <div class="input-with-button">
+            <input 
+              type="text" 
+              id="numeroLote" 
+              class="form-control"
+              [(ngModel)]="nuevoLote.numeroLote"
+              name="numeroLote"
+              placeholder="Ej: 1234567890123"
+              maxlength="13"
+              pattern="\d{13}"
+              required>
+            <button 
+              type="button" 
+              class="btn-generate"
+              (click)="generarNumeroLoteAleatorio()"
+              title="Generar número aleatorio">
+              Generar
+            </button>
+          </div>
+          <small class="form-hint">Solo números, exactamente 13 dígitos</small>
+        </div>
+
+        <!-- Fecha de Vencimiento -->
+        <div class="form-group">
+          <label for="fechaVencimiento" class="form-label">
+            Fecha de Vencimiento <span class="required">*</span>
+          </label>
+          <input 
+            type="date" 
+            id="fechaVencimiento" 
+            class="form-control"
+            [(ngModel)]="nuevoLote.fechaVencimiento"
+            name="fechaVencimiento"
+            required>
+        </div>
+
+        <!-- Cantidad -->
+        <div class="form-group">
+          <label for="cantidad" class="form-label">
+            Cantidad <span class="required">*</span>
+          </label>
+          <input 
+            type="number" 
+            id="cantidad" 
+            class="form-control"
+            [(ngModel)]="nuevoLote.cantidad"
+            name="cantidad"
+            min="1"
+            placeholder="0"
+            required>
+        </div>
+
+        <!-- Botones -->
+        <div class="modal-footer">
+          <button 
+            type="button" 
+            class="btn-secondary" 
+            (click)="cerrarModalCrear()"
+            [disabled]="guardandoLote">
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            class="btn-primary"
+            [disabled]="guardandoLote">
+            <span *ngIf="guardandoLote">Guardando...</span>
+            <span *ngIf="!guardandoLote">Guardar Lote</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Buscar Lote -->
+<div class="modal-overlay" *ngIf="mostrarModalBuscar" (click)="cerrarModalBuscar()">
+  <div class="modal-content modal-buscar" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Buscar Lote</h3>
+      <button class="modal-close" (click)="cerrarModalBuscar()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Input de búsqueda -->
+      <div class="form-group">
+        <label for="numeroLoteBuscar" class="form-label">
+          Número de Lote (13 dígitos)
+        </label>
+        <input 
+          type="text" 
+          id="numeroLoteBuscar" 
+          class="form-control input-buscar"
+          [(ngModel)]="numeroLoteBuscar"
+          (ngModelChange)="onNumeroLoteBuscarChange()"
+          name="numeroLoteBuscar"
+          placeholder="Ingrese 13 dígitos..."
+          maxlength="13"
+          pattern="\d{13}"
+          autofocus>
+        <small class="form-hint">La búsqueda se realiza automáticamente al completar 13 dígitos</small>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-busqueda" *ngIf="buscandoLote">
+        <div class="spinner-small"></div>
+        <p>Buscando...</p>
+      </div>
+
+      <!-- Error -->
+      <div class="alert alert-error" *ngIf="errorBusqueda && !buscandoLote">
+        {{ errorBusqueda }}
+      </div>
+
+      <!-- Lote encontrado -->
+      <div class="lote-resultado" *ngIf="loteEncontrado && !buscandoLote">
+        <div class="resultado-header">
+          <span class="resultado-icon">✅</span>
+          <h4>Lote Encontrado</h4>
+        </div>
+        
+        <div class="resultado-info">
+          <div class="info-row">
+            <span class="label">Código de Lote:</span>
+            <span class="value badge badge-lote">{{ loteEncontrado.codigo }}</span>
+          </div>
+          
+          <div class="info-row">
+            <span class="label">Producto:</span>
+            <span class="value">{{ loteEncontrado.productoNombre }}</span>
+          </div>
+          
+          <div class="info-row">
+            <span class="label">SKU:</span>
+            <span class="value">{{ loteEncontrado.productoSku }}</span>
+          </div>
+          
+          <div class="info-row">
+            <span class="label">Categoría:</span>
+            <span class="value">{{ loteEncontrado.categoriaNombre || 'Sin categoría' }}</span>
+          </div>
+          
+          <div class="info-row">
+            <span class="label">Fecha Vencimiento:</span>
+            <span class="value">{{ formatearFecha(loteEncontrado.fechaVencimiento) }}</span>
+          </div>
+          
+          <div class="info-row">
+            <span class="label">Cantidad:</span>
+            <span class="value">{{ loteEncontrado.stock }} unidades</span>
+          </div>
+          
+          <div class="info-row">
+            <span class="label">Días Restantes:</span>
+            <span class="value">
+              <span class="badge" [ngClass]="getDiasRestantesClass(loteEncontrado.diasRestantes)">
+                {{ loteEncontrado.diasRestantes }}
+              </span>
+            </span>
+          </div>
+          
+          <div class="info-row">
+            <span class="label">Estado:</span>
+            <span class="value">
+              <span class="badge" [ngClass]="getEstadoBadgeClass(loteEncontrado.estado)">
+                {{ loteEncontrado.estado }}
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

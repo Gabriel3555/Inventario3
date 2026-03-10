@@ -1,0 +1,151 @@
+<div class="categorias-content">
+  <!-- Page Header -->
+  <div class="page-header-section">
+    <div class="header-info">
+      <h2 class="section-title">Categorías</h2>
+      <p class="section-description">Gestiona las categorías de productos</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-primary" (click)="abrirModalCrear()">
+        Nueva Categoría
+      </button>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div class="alert alert-error" *ngIf="error">
+    {{ error }}
+    <button class="alert-close" (click)="error = ''">✕</button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-spinner" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Cargando categorías...</p>
+  </div>
+
+  <!-- Cards Grid -->
+  <div class="cards-container" *ngIf="!loading && !error">
+    <div class="cards-wrapper">
+      <div class="cards-grid">
+        <article class="categoria-card" *ngFor="let categoria of categoriasPaginadas">
+          <h3 class="card-nombre">{{ categoria.nombre }}</h3>
+          <dl class="card-details">
+            <div class="detail-row" *ngIf="categoria.descripcion">
+              <dt>Descripción</dt>
+              <dd>{{ categoria.descripcion }}</dd>
+            </div>
+          </dl>
+          <div class="card-actions">
+            <button class="btn btn-secondary btn-sm" (click)="abrirModalEditar(categoria)">Editar</button>
+            <button class="btn btn-danger btn-sm" (click)="eliminarCategoria(categoria)">Eliminar</button>
+          </div>
+        </article>
+      </div>
+
+      <div class="empty-state" *ngIf="categoriasFiltradas.length === 0">
+        <div class="empty-icon">📁</div>
+        <h3>No hay categorías</h3>
+        <p>Crea tu primera categoría para organizar tus productos</p>
+        <button class="btn-primary" (click)="abrirModalCrear()">
+          Crear Categoría
+        </button>
+      </div>
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagination" *ngIf="categoriasFiltradas.length > 0">
+      <div class="pagination-info">
+        Mostrando {{ rangoInicio }} - {{ rangoFin }} de {{ categoriasFiltradas.length }} categorías
+      </div>
+      <div class="pagination-controls" *ngIf="totalPaginas > 1">
+        <button 
+          class="btn-pagination"
+          [disabled]="paginaActual === 1"
+          (click)="paginaAnterior()">
+          ‹ Anterior
+        </button>
+        <button 
+          *ngFor="let pagina of paginasArray"
+          class="btn-pagination"
+          [class.active]="pagina === paginaActual"
+          (click)="cambiarPagina(pagina)">
+          {{ pagina }}
+        </button>
+        <button 
+          class="btn-pagination"
+          [disabled]="paginaActual === totalPaginas"
+          (click)="paginaSiguiente()">
+          Siguiente ›
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear/Editar Categoría -->
+<div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ modoEdicion ? 'Editar Categoría' : 'Nueva Categoría' }}</h3>
+      <button class="modal-close" (click)="cerrarModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Error Message -->
+      <div class="alert alert-error" *ngIf="error">
+        {{ error }}
+      </div>
+
+      <form (ngSubmit)="guardarCategoria()">
+        <!-- Nombre -->
+        <div class="form-group">
+          <label for="nombre" class="form-label">
+            Nombre <span class="required">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="nombre" 
+            class="form-control"
+            [(ngModel)]="categoriaActual.nombre"
+            name="nombre"
+            placeholder="Ej: Electrónica, Alimentos, etc."
+            required
+            autofocus>
+        </div>
+
+        <!-- Descripción -->
+        <div class="form-group">
+          <label for="descripcion" class="form-label">
+            Descripción
+          </label>
+          <textarea 
+            id="descripcion" 
+            class="form-control"
+            [(ngModel)]="categoriaActual.descripcion"
+            name="descripcion"
+            rows="3"
+            placeholder="Descripción opcional de la categoría"></textarea>
+        </div>
+
+        <!-- Botones -->
+        <div class="modal-footer">
+          <button 
+            type="button" 
+            class="btn-secondary" 
+            (click)="cerrarModal()"
+            [disabled]="guardando">
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            class="btn-primary"
+            [disabled]="guardando">
+            <span *ngIf="guardando">Guardando...</span>
+            <span *ngIf="!guardando">{{ modoEdicion ? 'Actualizar' : 'Crear' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

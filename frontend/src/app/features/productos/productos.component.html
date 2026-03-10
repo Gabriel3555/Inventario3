@@ -1,0 +1,274 @@
+<div class="productos-content">
+      <!-- Page Header -->
+      <div class="page-header-section">
+        <div class="header-info">
+          <h2 class="section-title">Productos</h2>
+          <p class="section-description">Catálogo completo de productos con SKU, precios y categorías.</p>
+        </div>
+        <div class="header-actions">
+          <div class="search-box">
+            <input 
+              type="text" 
+              placeholder="Buscar por nombre, SKU o categoría..." 
+              class="search-input"
+              [(ngModel)]="searchTerm"
+              (input)="onSearch()"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-bar" *ngIf="isAdmin">
+        <button class="btn btn-primary" (click)="abrirModalCrear()">
+          Nuevo Producto
+        </button>
+      </div>
+
+      <!-- Error Message -->
+      <div class="alert alert-error" *ngIf="error">
+        {{ error }}
+        <button class="alert-close" (click)="error = ''">✕</button>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-spinner" *ngIf="loading">
+        <div class="spinner"></div>
+        <p>Cargando productos...</p>
+      </div>
+
+      <!-- Tabla de Productos -->
+      <div class="table-container" *ngIf="!loading">
+        <table class="productos-table">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>SKU</th>
+              <th>Categoría</th>
+              <th>P. Compra</th>
+              <th>P. Venta</th>
+              <th>Margen</th>
+              <th>IVA</th>
+              <th *ngIf="isAdmin">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let producto of productosPaginados">
+              <td>
+                <div class="producto-info">
+                  <span class="producto-nombre">{{ producto.nombre }}</span>
+                  <span class="producto-stock" [class.stock-bajo]="producto.stock <= producto.stockMinimo">
+                    Stock: {{ producto.stock }}
+                  </span>
+                </div>
+              </td>
+              <td><span class="badge badge-sku">{{ producto.sku }}</span></td>
+              <td>{{ producto.categoria?.nombre || 'Sin categoría' }}</td>
+              <td>{{ formatearMoneda(producto.precioCompra) }}</td>
+              <td class="precio-venta">{{ formatearMoneda(producto.precioVenta) }}</td>
+              <td>
+                <span class="badge" [class.badge-success]="calcularMargen(producto) > 30" 
+                      [class.badge-warning]="calcularMargen(producto) <= 30 && calcularMargen(producto) > 0"
+                      [class.badge-danger]="calcularMargen(producto) <= 0">
+                  {{ calcularMargen(producto).toFixed(1) }}%
+                </span>
+              </td>
+              <td>{{ producto.impuesto?.porcentaje || 0 }}%</td>
+              <td *ngIf="isAdmin">
+                <div class="action-buttons">
+                  <button class="btn-action btn-edit" (click)="abrirModalEditar(producto)" title="Editar">
+                    Editar
+                  </button>
+                  <button class="btn-action btn-delete" (click)="eliminarProducto(producto.id)" title="Eliminar">
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="productosPaginados.length === 0">
+          <div class="empty-icon">📦</div>
+          <h3>No se encontraron productos</h3>
+          <p *ngIf="searchTerm">Intenta con otros términos de búsqueda</p>
+          <p *ngIf="!searchTerm && !isAdmin">No hay productos registrados</p>
+          <p *ngIf="!searchTerm && isAdmin">Comienza agregando tu primer producto</p>
+          <button class="btn btn-primary" (click)="abrirModalCrear()" *ngIf="!searchTerm && isAdmin">
+            Crear Producto
+          </button>
+        </div>
+      </div>
+
+      <!-- Paginación -->
+      <div class="pagination" *ngIf="productosPaginados.length > 0">
+        <div class="pagination-info">
+          Mostrando {{ (paginaActual - 1) * productosPorPagina + 1 }} - 
+          {{ Math.min(paginaActual * productosPorPagina, productosFiltrados.length) }} 
+          de {{ productosFiltrados.length }} productos
+        </div>
+        <div class="pagination-controls">
+          <button 
+            class="btn-pagination" 
+            [disabled]="paginaActual === 1"
+            (click)="cambiarPagina(paginaActual - 1)">
+            ‹ Anterior
+          </button>
+          <button 
+            *ngFor="let pagina of paginasArray"
+            class="btn-pagination"
+            [class.active]="pagina === paginaActual"
+            (click)="cambiarPagina(pagina)">
+            {{ pagina }}
+          </button>
+          <button 
+            class="btn-pagination" 
+            [disabled]="paginaActual === totalPaginas"
+            (click)="cambiarPagina(paginaActual + 1)">
+            Siguiente ›
+          </button>
+        </div>
+      </div>
+</div>
+
+<!-- Modal Crear/Editar Producto -->
+<div class="modal-overlay" *ngIf="showModal" (click)="cerrarModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ modoEdicion ? 'Editar Producto' : 'Nuevo Producto' }}</h3>
+      <button class="modal-close" (click)="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form class="product-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nombre">Nombre del Producto *</label>
+            <input 
+              type="text" 
+              id="nombre" 
+              class="form-control"
+              [(ngModel)]="productoActual.nombre"
+              name="nombre"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="sku">SKU *</label>
+            <input 
+              type="text" 
+              id="sku" 
+              class="form-control"
+              [(ngModel)]="productoActual.sku"
+              name="sku"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="descripcion">Descripción</label>
+          <textarea 
+            id="descripcion" 
+            class="form-control"
+            [(ngModel)]="productoActual.descripcion"
+            name="descripcion"
+            rows="3"
+          ></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="precioCompra">Precio de Compra *</label>
+            <input 
+              type="number" 
+              id="precioCompra" 
+              class="form-control"
+              [(ngModel)]="productoActual.precioCompra"
+              name="precioCompra"
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="precioVenta">Precio de Venta *</label>
+            <input 
+              type="number" 
+              id="precioVenta" 
+              class="form-control"
+              [(ngModel)]="productoActual.precioVenta"
+              name="precioVenta"
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="stockMinimo">Stock Mínimo</label>
+            <input 
+              type="number" 
+              id="stockMinimo" 
+              class="form-control"
+              [(ngModel)]="productoActual.stockMinimo"
+              name="stockMinimo"
+              min="0"
+            />
+          </div>
+          <div class="form-group">
+            <label for="ubicacion">Ubicación</label>
+            <input 
+              type="text" 
+              id="ubicacion" 
+              class="form-control"
+              [(ngModel)]="productoActual.ubicacion"
+              name="ubicacion"
+              placeholder="Ej: Pasillo A, Estante 3"
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="iva">IVA *</label>
+            <select 
+              id="iva" 
+              class="form-control"
+              [(ngModel)]="ivaSeleccionado"
+              name="iva"
+              required
+            >
+              <option value="0">0%</option>
+              <option value="5">5%</option>
+              <option value="19">19%</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="categoria">Categoría</label>
+            <select 
+              id="categoria" 
+              class="form-control"
+              [(ngModel)]="productoActual.categoria"
+              name="categoria"
+              [compareWith]="compararCategorias"
+            >
+              <option [ngValue]="undefined">Sin categoría</option>
+              <option *ngFor="let categoria of categorias" [ngValue]="categoria">
+                {{ categoria.nombre }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="guardarProducto()">
+        {{ modoEdicion ? 'Actualizar' : 'Crear' }} Producto
+      </button>
+    </div>
+  </div>
+</div>
