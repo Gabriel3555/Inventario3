@@ -47,7 +47,6 @@
               <th>Categoría</th>
               <th>P. Compra</th>
               <th>P. Venta</th>
-              <th>Margen</th>
               <th>IVA</th>
               <th *ngIf="isAdmin">Acciones</th>
             </tr>
@@ -66,13 +65,6 @@
               <td>{{ producto.categoria?.nombre || 'Sin categoría' }}</td>
               <td>{{ formatearMoneda(producto.precioCompra) }}</td>
               <td class="precio-venta">{{ formatearMoneda(producto.precioVenta) }}</td>
-              <td>
-                <span class="badge" [class.badge-success]="calcularMargen(producto) > 30" 
-                      [class.badge-warning]="calcularMargen(producto) <= 30 && calcularMargen(producto) > 0"
-                      [class.badge-danger]="calcularMargen(producto) <= 0">
-                  {{ calcularMargen(producto).toFixed(1) }}%
-                </span>
-              </td>
               <td>{{ producto.impuesto?.porcentaje || 0 }}%</td>
               <td *ngIf="isAdmin">
                 <div class="action-buttons">
