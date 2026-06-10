@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -98,11 +99,12 @@ public class VentaService {
                 lote.setCantidad(lote.getCantidad() - detalleRequest.getCantidad());
                 loteRepository.save(lote);
                 // No eliminamos el lote, lo dejamos en 0 para marcarlo como "Vendido"
-            } else {
-                // Check stock general del producto
-                if (producto.getStock() < detalleRequest.getCantidad()) {
-                    throw new BadRequestException("Stock insuficiente para el producto: " + producto.getNombre());
-                }
+            }
+
+            // Check stock general del producto (también aplica al vender por lote,
+            // ya que el stock del producto se reduce igualmente)
+            if (producto.getStock() < detalleRequest.getCantidad()) {
+                throw new BadRequestException("Stock insuficiente para el producto: " + producto.getNombre());
             }
 
             // Calculate subtotal
@@ -113,7 +115,7 @@ public class VentaService {
             BigDecimal impuestoDetalle = BigDecimal.ZERO;
             if (producto.getImpuesto() != null) {
                 impuestoDetalle = subtotalDetalle.multiply(producto.getImpuesto().getPorcentaje())
-                        .divide(BigDecimal.valueOf(100));
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
             }
 
             // Create detalle
@@ -170,14 +172,35 @@ public class VentaService {
     @Transactional
     public void delete(Integer id) {
         Venta venta = findById(id);
-        
+
         // Restore stock for each detail
         for (DetalleVenta detalle : venta.getDetalles()) {
             Producto producto = detalle.getProducto();
             producto.setStock(producto.getStock() + detalle.getCantidad());
             productoRepository.save(producto);
         }
-        
+
+        // Revertir también los movimientos de la venta: restaurar la cantidad
+        // de los lotes vendidos y eliminar los movimientos asociados
+        String motivoExacto = "Venta #" + id;
+        String prefijoLote = motivoExacto + " - Lote: ";
+        List<Movimiento> movimientos = movimientoRepository.findByMotivoStartingWith(motivoExacto);
+        for (Movimiento movimiento : movimientos) {
+            String motivo = movimiento.getMotivo();
+            // El prefijo "Venta #1" también coincide con "Venta #10"; validar el id exacto
+            if (!motivo.equals(motivoExacto) && !motivo.startsWith(prefijoLote)) {
+                continue;
+            }
+            if (motivo.startsWith(prefijoLote)) {
+                String numeroLote = motivo.substring(prefijoLote.length());
+                loteRepository.findByNumeroLote(numeroLote).ifPresent(lote -> {
+                    lote.setCantidad(lote.getCantidad() + movimiento.getCantidad());
+                    loteRepository.save(lote);
+                });
+            }
+            movimientoRepository.delete(movimiento);
+        }
+
         ventaRepository.delete(venta);
     }
 }

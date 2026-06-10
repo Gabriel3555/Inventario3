@@ -4,6 +4,7 @@ import com.inventario.dto.JwtResponse;
 import com.inventario.dto.LoginRequest;
 import com.inventario.dto.RegisterRequest;
 import com.inventario.entity.Usuario;
+import com.inventario.enums.Rol;
 import com.inventario.exception.BadRequestException;
 import com.inventario.repository.UsuarioRepository;
 import com.inventario.security.JwtUtil;
@@ -39,6 +40,13 @@ public class AuthService {
     public JwtResponse register(RegisterRequest request) {
         if (usuarioRepository.existsByCorreo(request.getCorreo())) {
             throw new BadRequestException("El correo ya está registrado");
+        }
+
+        // El registro público solo puede crear ADMIN cuando aún no existe ningún usuario
+        // (bootstrap inicial). Después, los ADMIN se crean desde /api/usuarios.
+        if (request.getRol() == Rol.ADMIN && usuarioRepository.count() > 0) {
+            throw new BadRequestException(
+                    "No es posible registrarse como administrador. Solicite a un administrador que cree la cuenta.");
         }
 
         Usuario usuario = Usuario.builder()

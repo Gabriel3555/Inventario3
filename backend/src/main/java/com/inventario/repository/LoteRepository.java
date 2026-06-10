@@ -18,7 +18,7 @@ public interface LoteRepository extends JpaRepository<Lote, Integer> {
     
     Optional<Lote> findByNumeroLote(String numeroLote);
 
-    @Query("SELECT l FROM Lote l WHERE l.fechaVencimiento <= :fecha")
+    @Query("SELECT l FROM Lote l WHERE l.fechaVencimiento < :fecha")
     List<Lote> findLotesVencidos(@Param("fecha") LocalDate fecha);
 
     @Query("SELECT l FROM Lote l WHERE l.fechaVencimiento BETWEEN :hoy AND :limite")

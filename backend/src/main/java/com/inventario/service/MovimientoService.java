@@ -86,6 +86,7 @@ public class MovimientoService {
         return movimiento;
     }
 
+    @Transactional
     public void delete(Integer id) {
         Movimiento movimiento = findById(id);
         

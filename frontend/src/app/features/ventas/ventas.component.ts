@@ -269,8 +269,15 @@ export class VentasComponent implements OnInit {
       this.errorVenta = 'La cantidad debe ser mayor a 0';
       return;
     }
-    if (this.ventaForm.cantidad > (this.ventaForm.loteInfo.stock || 0)) {
-      this.errorVenta = `La cantidad no puede ser mayor al stock disponible (${this.ventaForm.loteInfo.stock})`;
+    // Considerar las unidades de este mismo lote ya añadidas a la venta
+    const yaAgregado = this.detallesEnVenta
+      .filter(d => d.numeroLote === this.ventaForm.numeroLote)
+      .reduce((sum, d) => sum + d.cantidad, 0);
+    const disponible = (this.ventaForm.loteInfo.stock || 0) - yaAgregado;
+    if (this.ventaForm.cantidad > disponible) {
+      this.errorVenta = yaAgregado > 0
+        ? `La cantidad no puede ser mayor al stock disponible (${disponible} restante; ya añadió ${yaAgregado} de este lote)`
+        : `La cantidad no puede ser mayor al stock disponible (${disponible})`;
       return;
     }
     this.errorVenta = '';

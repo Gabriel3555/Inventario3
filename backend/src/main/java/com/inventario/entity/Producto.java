@@ -42,9 +42,11 @@ public class Producto {
     private BigDecimal precioVenta;
 
     @Column(columnDefinition = "INT DEFAULT 0")
+    @Builder.Default
     private Integer stock = 0;
 
     @Column(name = "stock_minimo", columnDefinition = "INT DEFAULT 0")
+    @Builder.Default
     private Integer stockMinimo = 0;
 
     @Column(length = 100)
