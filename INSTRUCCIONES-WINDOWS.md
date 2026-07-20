@@ -18,18 +18,9 @@ Tú solo necesitas usar el navegador en el puerto **2200**. Lo demás funciona s
 
 ---
 
-## Paso 1: Instalar Docker Desktop
+## Paso 1: Abrir Docker Desktop
 
-1. Entra a <https://www.docker.com/products/docker-desktop/>
-2. Haz clic en **Download for Windows** y descarga el instalador.
-3. Abre el archivo descargado (`Docker Desktop Installer.exe`) y dale **siguiente** a todo.
-   - Si te pregunta por **WSL 2**, deja la casilla marcada (es lo recomendado).
-4. Al terminar, **reinicia la computadora** (importante).
-5. Después de reiniciar, abre **Docker Desktop** desde el menú de inicio.
-   - La primera vez puede pedirte aceptar términos y crear cuenta: puedes saltarte la cuenta (botón "Skip" o "Continuar sin iniciar sesión").
-6. Espera a que en la esquina inferior izquierda de Docker Desktop aparezca el ícono de la ballena en **verde** (dice "Engine running"). Eso significa que está listo.
-
-> ⚠️ **Docker Desktop debe estar abierto y en verde** cada vez que quieras usar el sistema. Si está cerrado, nada va a funcionar.
+1. Abrir Docker Desktop en el computador
 
 ---
 
