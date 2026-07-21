@@ -5,11 +5,12 @@ import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import type { LoginRequest } from '../../../core/models/auth.model';
+import { CatchBallComponent } from '../../../shared/catch-ball/catch-ball.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, CatchBallComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })

@@ -1,0 +1,61 @@
+<app-catch-ball />
+
+<header class="nav">
+  <div class="nav-brand">
+    <span class="brand-mark">S</span>
+    <span class="brand-name">StockPro</span>
+  </div>
+  <a routerLink="/login" class="btn btn-ghost">Iniciar sesión</a>
+</header>
+
+<main>
+  <section class="hero">
+    <span class="badge">Sistema de Inventario Inteligente</span>
+    <h1 class="text-balance">Tu inventario, <span class="accent">bajo control</span> en todo momento</h1>
+    <p class="hero-sub text-pretty">
+      Administra productos, ventas, lotes, clientes y proveedores desde una sola plataforma
+      rápida, segura y fácil de usar.
+    </p>
+    <div class="hero-actions">
+      <a routerLink="/login" class="btn btn-primary">Comenzar ahora</a>
+      <a routerLink="/register" class="btn btn-outline">Crear cuenta</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat">
+        <strong>100%</strong>
+        <span>Control de stock</span>
+      </div>
+      <div class="stat">
+        <strong>24/7</strong>
+        <span>Disponibilidad</span>
+      </div>
+      <div class="stat">
+        <strong>2</strong>
+        <span>Roles de acceso</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <h2>Todo lo que necesitas para gestionar tu negocio</h2>
+    <div class="features-grid">
+      @for (f of features; track f.title) {
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true">{{ f.icon }}</div>
+          <h3>{{ f.title }}</h3>
+          <p>{{ f.desc }}</p>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section class="cta">
+    <h2 class="text-balance">Empieza a gestionar tu inventario hoy</h2>
+    <p>Accede al sistema y toma el control de tu negocio.</p>
+    <a routerLink="/login" class="btn btn-primary btn-lg">Ir al login</a>
+  </section>
+</main>
+
+<footer class="footer">
+  <p>StockPro — Sistema de Inventario</p>
+</footer>
