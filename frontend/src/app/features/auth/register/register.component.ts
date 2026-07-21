@@ -4,11 +4,12 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import type { RegisterRequest } from '../../../core/models/auth.model';
+import { CatchBallComponent } from '../../../shared/catch-ball/catch-ball.component';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, CatchBallComponent],
   templateUrl: './register.component.html',
   styleUrl: './register.component.css'
 })

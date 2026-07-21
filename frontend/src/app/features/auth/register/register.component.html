@@ -1,7 +1,13 @@
+<app-catch-ball />
+
+<a routerLink="/" class="back-link">← Volver al inicio</a>
+
 <div class="auth-card">
-  <img src="/favicon.ico" alt="StockPro" class="auth-logo" />
-  <h1>Registrarse</h1>
-  <p class="subtitle">Crear cuenta en el sistema de inventario</p>
+  <div class="auth-brand">
+    <span class="brand-mark">S</span>
+  </div>
+  <h1>Crear cuenta</h1>
+  <p class="subtitle">Únete al sistema de inventario StockPro</p>
 
   @if (errorMessage) {
     <div class="error-msg" role="alert">{{ errorMessage }}</div>
@@ -42,7 +48,11 @@
     </label>
 
     <button type="submit" [disabled]="loading">
-      {{ loading ? 'Registrando…' : 'Registrarse' }}
+      @if (loading) {
+        <span class="spinner" aria-hidden="true"></span> Registrando…
+      } @else {
+        Registrarse
+      }
     </button>
   </form>
 
