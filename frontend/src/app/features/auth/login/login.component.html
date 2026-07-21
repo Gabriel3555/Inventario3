@@ -1,7 +1,13 @@
+<app-catch-ball />
+
+<a routerLink="/" class="back-link">← Volver al inicio</a>
+
 <div class="auth-card">
-  <img src="/favicon.ico" alt="StockPro" class="auth-logo" />
-  <h1>Iniciar sesión</h1>
-  <p class="subtitle">Sistema de inventario</p>
+  <div class="auth-brand">
+    <span class="brand-mark">S</span>
+  </div>
+  <h1>Bienvenido de nuevo</h1>
+  <p class="subtitle">Ingresa a tu cuenta de StockPro</p>
 
   @if (errorMessage()) {
     <div class="error-msg" role="alert">{{ errorMessage() }}</div>
@@ -25,7 +31,11 @@
     }
 
     <button type="submit" [disabled]="loading()">
-      {{ loading() ? 'Entrando…' : 'Entrar' }}
+      @if (loading()) {
+        <span class="spinner" aria-hidden="true"></span> Entrando…
+      } @else {
+        Entrar
+      }
     </button>
   </form>
 

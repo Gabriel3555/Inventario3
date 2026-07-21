@@ -32,9 +32,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/inventario_escolar?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
-      # create-drop: crea las tablas al arrancar y las borra al apagar.
-      # Evita problemas de esquemas viejos, pero LOS DATOS SE PIERDEN al reiniciar.
-      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
       JWT_SECRET: MiClaveSecretaSuperSeguraParaJWTQueDebeSerMuyLargaAlMenos256Bits2024!
       JWT_EXPIRATION: 86400000
     ports:
